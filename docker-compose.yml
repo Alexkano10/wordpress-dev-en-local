@@ -1,0 +1,44 @@
+version: "3.8"  # Versión mínima de Compose que usamos
+
+services:
+  db:
+    image: "mysql:${MYSQL_VERSION}"          # Usa la versión definida en .env
+    container_name: wp_db
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE:      ${MYSQL_DATABASE}
+      MYSQL_USER:          ${MYSQL_USER}
+      MYSQL_PASSWORD:      ${MYSQL_PASSWORD}
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+      - ./database:/var/lib/mysql            # Persistencia de datos MySQL
+    networks:
+      - wp-net
+
+  wordpress:
+    image: "wordpress:${WORDPRESS_VERSION}"  # Usa la versión definida en .env
+    container_name: wp_app
+    depends_on:
+      - db
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      WORDPRESS_DB_HOST:      db:3306
+      WORDPRESS_DB_USER:      ${MYSQL_USER}
+      WORDPRESS_DB_PASSWORD:  ${MYSQL_PASSWORD}
+      WORDPRESS_DB_NAME:      ${MYSQL_DATABASE}
+      WORDPRESS_TABLE_PREFIX: ${WORDPRESS_TABLE_PREFIX}
+    volumes:
+      - ./wordpress:/var/www/html           # Hot-reload del código WP
+    ports:
+      - "8000:80"                            # Exponer en localhost:8000
+    networks:
+      - wp-net
+
+networks:
+  wp-net:
+    driver: bridge                          # Red bridge aislada
