@@ -1,4 +1,4 @@
-version: "3.8"  # Versión mínima de Compose que usamos
+
 
 services:
   db:
