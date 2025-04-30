@@ -1,6 +1,4 @@
-# 🐳 Entorno Local WordPress con Docker Compose
-
-![WordPress + Docker](https://via.placeholder.com/800x200?text=WordPress+Docker+Development)
+# 🐳 Entorno Local WordPress con Docker Compose 
 
 ## 📖 Descripción
 
@@ -8,16 +6,21 @@ Este repositorio proporciona un entorno de desarrollo local para WordPress usand
 
 ### ✨ Características principales
 
-- **Persistencia de datos**: Base de datos MySQL almacenada en `./database`
-- **Hot-reload**: Cambios en tiempo real de código y assets desde `./wordpress` 
-- **Configuración sencilla**: Levantado con un único script `./scripts/start.sh`
+- **Persistencia de datos**: Base de datos MySQL almacenada en ./database
+- **Hot-reload**: Cambios en tiempo real de código y assets desde ./wordpress 
+- **Configuración sencilla**: Levantado con un único script ./scripts/start.sh
 - **Aislamiento completo**: Todo el entorno está en contenedores
+
+## 📚 Documentación
+
+Para instrucciones detalladas y guías paso a paso, visita:
+[Documentación completa del proyecto](https://alexkano10.github.io/my-documentation/projects/wordpress-dev-en-local.html)
 
 ## ⚙️ Requisitos previos
 
 - Ubuntu / macOS / Windows (con WSL2)
-- Docker CE ≥ 20.10
-- Docker Compose v2 (`docker compose`)
+- [Docker CE](https://docs.docker.com/engine/install/) ≥ 20.10
+- [Docker Compose](https://docs.docker.com/compose/install/) v2 (docker compose)
 - Git
 
 ## 🚀 Instalación y arranque
@@ -35,14 +38,14 @@ cd wordpress-dev-en-local
 cp .env.example .env
 ```
 
-Edita el archivo `.env` para definir:
-- `MYSQL_ROOT_PASSWORD` - Contraseña para el usuario root de MySQL
-- `MYSQL_DATABASE` - Nombre de la base de datos
-- `MYSQL_USER` - Usuario de MySQL para WordPress
-- `MYSQL_PASSWORD` - Contraseña del usuario MySQL
-- `WORDPRESS_TABLE_PREFIX` - Prefijo para tablas de WordPress (wp_ por defecto)
-- `MYSQL_VERSION` - Versión de MySQL/MariaDB a utilizar
-- `WORDPRESS_VERSION` - Versión de WordPress a utilizar
+Edita el archivo .env para definir:
+- MYSQL_ROOT_PASSWORD - Contraseña para el usuario root de MySQL
+- MYSQL_DATABASE - Nombre de la base de datos
+- MYSQL_USER - Usuario de MySQL para WordPress
+- MYSQL_PASSWORD - Contraseña del usuario MySQL
+- WORDPRESS_TABLE_PREFIX - Prefijo para tablas de WordPress (wp_ por defecto)
+- MYSQL_VERSION - Versión de MySQL/MariaDB a utilizar
+- WORDPRESS_VERSION - Versión de WordPress a utilizar
 
 ### Paso 3: Iniciar el entorno
 
@@ -53,9 +56,7 @@ Edita el archivo `.env` para definir:
 ### Paso 4: Acceder a WordPress
 
 Abre tu navegador y navega a:
-```
 http://localhost:8000
-```
 
 ## 🛠 Uso diario
 
@@ -89,7 +90,7 @@ docker compose logs -f
 
 ### Variables de entorno
 
-El archivo `.env` controla la configuración del entorno. Las variables disponibles son:
+El archivo .env controla la configuración del entorno. Las variables disponibles son:
 
 ```dotenv
 MYSQL_ROOT_PASSWORD=rootpassword
@@ -114,15 +115,23 @@ wordpress-dev-en-local/
     └── start.sh             # Script de inicio
 ```
 
+## 💻 Entorno de desarrollo recomendado
+
+- **Editor**: VSCode con extensiones PHP y WordPress
+- **Navegador**: Chrome/Firefox con DevTools para desarrollo web
+- **Terminal**: iTerm2 (macOS) o Windows Terminal (Windows)
+- **Git GUI**: GitKraken o Sourcetree (opcional)
+
 ## ⚠️ Solución de problemas
 
 | Problema | Solución |
 |----------|----------|
-| Variables no definidas | Asegúrate de tener `./.env` correctamente copiado desde `.env.example` |
+| Variables no definidas | Asegúrate de tener ./.env correctamente copiado desde .env.example |
 | Permisos de carpetas | Ejecuta `chown -R $UID:$UID database wordpress` |
-| Hot-reload no funciona | Verifica que estás editando dentro de `./wordpress` y recarga el navegador |
-| Puerto en uso | Cambia `8000:80` en `docker-compose.yml` y recrea los servicios |
-| Error de conexión a MySQL | Comprueba que las credenciales en `.env` coinciden con las de WordPress |
+| Hot-reload no funciona | Verifica que estás editando dentro de ./wordpress y recarga el navegador |
+| Puerto en uso | Cambia 8000:80 en docker-compose.yml y recrea los servicios |
+| Error de conexión a MySQL | Comprueba que las credenciales en .env coinciden con las de WordPress |
+| Contenedor crashea | Ejecuta `docker compose logs [servicio]` para ver errores detallados |
 
 ## 🤝 Contribuciones
 
@@ -134,7 +143,7 @@ wordpress-dev-en-local/
 
 ## 📄 Licencia
 
-Este proyecto está licenciado bajo la Licencia MIT - consulta el archivo `LICENSE` para más detalles.
+Este proyecto está licenciado bajo la Licencia MIT - consulta el archivo LICENSE para más detalles.
 
 ## 📞 Soporte
 
