@@ -1,4 +1,8 @@
+# Ignorar contenido, pero no la carpeta
+wordpress/*
+!wordpress/.gitkeep
 
-wordpress/
-database/
+database/*
+!database/initdb/.gitkeep
+
 .env
