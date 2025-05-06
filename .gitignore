@@ -1,8 +1,10 @@
-# Ignorar contenido, pero no la carpeta
+# Ignorar el contenido, pero mantener estructura
 wordpress/*
 !wordpress/.gitkeep
 
 database/*
+!database/initdb/
 !database/initdb/.gitkeep
 
+# Variables sensibles
 .env
