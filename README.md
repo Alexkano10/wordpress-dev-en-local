@@ -58,6 +58,81 @@ Edita el archivo .env para definir:
 Abre tu navegador y navega a:
 http://localhost:8000
 
+## 🔄 Importar un proyecto WordPress existente
+
+Si ya tienes tu propio código WordPress y no deseas una instalación nueva, sigue estos pasos:
+
+### 📁 Paso 1: Copiar los archivos de WordPress
+
+Copia el contenido del WordPress original (producción o backup) a la carpeta del proyecto:
+
+```bash
+cp -r /ruta/a/wordpress/. ./wordpress/
+```
+
+⚠️ No olvides el punto al final para copiar también archivos ocultos (.htaccess, etc.).
+
+### 🗃️ Paso 2: Copiar la base de datos SQL
+
+Coloca el archivo .sql exportado dentro de database/initdb/ y renómbralo como init.sql:
+
+```bash
+cp /ruta/a/dump.sql ./database/initdb/init.sql
+```
+
+### ⚙️ Paso 3: Configurar el entorno .env
+
+Duplica el archivo de ejemplo y edita tus variables:
+
+```bash
+cp .env.example .env
+nano .env
+```
+
+Cambios recomendados:
+```dotenv
+MYSQL_DATABASE=wordpress
+MYSQL_USER=alex
+MYSQL_PASSWORD=alex123
+MYSQL_ROOT_PASSWORD=root123
+```
+
+### 🧩 Paso 4: Verificar el dump SQL
+
+Ejecuta el script que asegura que el dump apunta a la base indicada en .env:
+
+```bash
+./scripts/fix-sql.sh
+```
+
+✅ Esto añade `USE wordpress;` si no está presente en el archivo .sql
+
+### 🚀 Paso 5: Levantar el entorno
+
+```bash
+./scripts/start.sh
+```
+
+Este script:
+- Crea carpetas si faltan
+- Corrige permisos
+- Levanta los contenedores
+- Espera a que MySQL esté listo
+- Muestra la URL de acceso
+
+### ✅ Acceso a WordPress
+
+Navega a:
+```
+http://localhost:8000/wp-login.php
+```
+
+Puedes verificar o crear un usuario admin con WP-CLI si no lo sabes:
+```bash
+docker compose run --rm cli wp user list
+docker compose run --rm cli wp user update admin --user_pass=tu_contraseña
+```
+
 ## 🛠 Uso diario
 
 ### Gestión de servicios
@@ -107,12 +182,14 @@ WORDPRESS_VERSION=latest
 ```
 wordpress-dev-en-local/
 ├── database/                # Persistencia de MySQL
+│   └── initdb/              # Scripts de inicialización SQL
 ├── wordpress/               # Código fuente de WordPress
 ├── docker-compose.yml       # Configuración de servicios
 ├── .env.example             # Plantilla de variables de entorno
 ├── .env                     # Variables de entorno (no versionado)
 └── scripts/
-    └── start.sh             # Script de inicio
+    ├── start.sh             # Script de inicio
+    └── fix-sql.sh           # Script para corregir SQL dumps
 ```
 
 ## 💻 Entorno de desarrollo recomendado
