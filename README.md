@@ -89,13 +89,6 @@ cp .env.example .env
 nano .env
 ```
 
-Cambios recomendados:
-```dotenv
-MYSQL_DATABASE=wordpress
-MYSQL_USER=alex
-MYSQL_PASSWORD=alex123
-MYSQL_ROOT_PASSWORD=root123
-```
 
 ### 🧩 Paso 4: Verificar el dump SQL
 
