@@ -46,8 +46,8 @@ create_env_file() {
     # Variables con valores por defecto
     DEFAULT_MYSQL_ROOT_PASSWORD="root123"
     DEFAULT_MYSQL_DATABASE="wordpress"
-    DEFAULT_MYSQL_USER="user"
-    DEFAULT_MYSQL_PASSWORD="user123"
+    DEFAULT_MYSQL_USER="alex"
+    DEFAULT_MYSQL_PASSWORD="alex123"
     DEFAULT_WORDPRESS_TABLE_PREFIX="wp_"
     DEFAULT_MYSQL_VERSION="8.0"
     DEFAULT_WORDPRESS_VERSION="latest"
@@ -119,6 +119,15 @@ MYSQL_VERSION=$MYSQL_VERSION
 WORDPRESS_VERSION=$WORDPRESS_VERSION
 EOL
     
+    # Exportar variables para uso en el script
+    export MYSQL_ROOT_PASSWORD
+    export MYSQL_DATABASE
+    export MYSQL_USER
+    export MYSQL_PASSWORD
+    export WORDPRESS_TABLE_PREFIX
+    export MYSQL_VERSION
+    export WORDPRESS_VERSION
+    
     echo -e "${GREEN}✓ Archivo .env creado correctamente en $ROOT_DIR/.env${NC}"
     echo ""
     return 0
@@ -146,7 +155,7 @@ EOL
     echo ""
 }
 
-# Función para modificar wp-config.php
+# Función para modificar o crear wp-config.php
 modify_wp_config() {
     # Verificar si el directorio wordpress existe
     if [ ! -d "$ROOT_DIR/wordpress" ]; then
@@ -160,35 +169,164 @@ modify_wp_config() {
     if [ -f "$WP_CONFIG_FILE" ]; then
         echo -e "${YELLOW}Modificando wp-config.php existente...${NC}"
         
+        # Realizar una copia de seguridad del archivo original
+        cp "$WP_CONFIG_FILE" "${WP_CONFIG_FILE}.bak"
+        echo -e "${YELLOW}Copia de seguridad creada en ${WP_CONFIG_FILE}.bak${NC}"
+        
+        # Modificar la configuración de la base de datos
+        echo -e "${YELLOW}Modificando configuración de la base de datos...${NC}"
+        
+        # Método más seguro para modificar los defines DB_*
+        # 1. DB_USER
+        sed -i "/define.*DB_USER/c\define( 'DB_USER', getenv('MYSQL_USER') ?: '' );" "$WP_CONFIG_FILE"
+        
+        # 2. DB_PASSWORD
+        sed -i "/define.*DB_PASSWORD/c\define( 'DB_PASSWORD', getenv('MYSQL_PASSWORD') ?: '' );" "$WP_CONFIG_FILE"
+        
+        # 3. DB_HOST
+        sed -i "/define.*DB_HOST/c\define( 'DB_HOST', 'db' );" "$WP_CONFIG_FILE"
+        
+        # 4. DB_NAME - Opcional, pero recomendado para completar la configuración
+        sed -i "/define.*DB_NAME/c\define( 'DB_NAME', getenv('MYSQL_DATABASE') ?: '' );" "$WP_CONFIG_FILE"
+        
+        echo -e "${GREEN}✓ Configuración de la base de datos actualizada${NC}"
+        
         # Verificar si ya contiene la configuración para localhost
         if grep -q "HTTP_HOST.*localhost:8000" "$WP_CONFIG_FILE"; then
             echo -e "${GREEN}✓ La configuración para localhost:8000 ya existe en wp-config.php${NC}"
         else
-            # Añadir configuración para localhost
-            sed -i '/<?php/a \
+            # Buscar la posición correcta para insertar el código - justo después de <?php
+            # pero respetando si ya hay comentarios o definiciones de WP_CACHE antes
+            if grep -q "WP_CACHE.*true" "$WP_CONFIG_FILE"; then
+                # Si hay WP_CACHE, insertamos después de esa línea
+                sed -i '/WP_CACHE.*true/a \
 // Configuración para entorno local\
 if ($_SERVER["HTTP_HOST"] === "localhost:8000") {\
     define("WP_HOME", "http://localhost:8000");\
     define("WP_SITEURL", "http://localhost:8000");\
 }' "$WP_CONFIG_FILE"
+            else
+                # Si no hay WP_CACHE, insertamos después de <?php
+                sed -i '/<?php/a \
+// Configuración para entorno local\
+if ($_SERVER["HTTP_HOST"] === "localhost:8000") {\
+    define("WP_HOME", "http://localhost:8000");\
+    define("WP_SITEURL", "http://localhost:8000");\
+}' "$WP_CONFIG_FILE"
+            fi
             
             echo -e "${GREEN}✓ Configuración para localhost:8000 añadida a wp-config.php${NC}"
         fi
         
-        # Verificar si ya utiliza variables de entorno
-        if grep -q "getenv('MYSQL_USER')" "$WP_CONFIG_FILE"; then
-            echo -e "${GREEN}✓ Las variables de entorno ya están configuradas en wp-config.php${NC}"
-        else
-            # Sustituir defines de base de datos por variables de entorno
-            sed -i 's/define( *.['"'"']DB_USER.['"'"'], *.['"'"'].*.['"'"'] *);/define( '"'"'DB_USER'"'"', getenv('"'"'MYSQL_USER'"'"') ?: '"'"''"'"' );/g' "$WP_CONFIG_FILE"
-            sed -i 's/define( *.['"'"']DB_PASSWORD.['"'"'], *.['"'"'].*.['"'"'] *);/define( '"'"'DB_PASSWORD'"'"', getenv('"'"'MYSQL_PASSWORD'"'"') ?: '"'"''"'"' );/g' "$WP_CONFIG_FILE"
-            sed -i 's/define( *.['"'"']DB_HOST.['"'"'], *.['"'"'].*.['"'"'] *);/define( '"'"'DB_HOST'"'"', '"'"'db'"'"' );/g' "$WP_CONFIG_FILE"
-            
-            echo -e "${GREEN}✓ Variables de entorno configuradas en wp-config.php${NC}"
-        fi
+        echo -e "${GREEN}✓ wp-config.php modificado correctamente${NC}"
     else
-        echo -e "${YELLOW}No se encontró wp-config.php. Se creará automáticamente cuando WordPress se inicie.${NC}"
-        echo -e "${YELLOW}Nota: Deberás modificar wp-config.php manualmente después de la primera ejecución.${NC}"
+        echo -e "${YELLOW}No se encontró wp-config.php. Creando uno personalizado...${NC}"
+        
+        # Cargar variables del archivo .env
+        if [ -f "$ROOT_DIR/.env" ]; then
+            source "$ROOT_DIR/.env"
+        else
+            echo -e "${RED}Archivo .env no encontrado. Por favor, crea primero el archivo .env.${NC}"
+            return 1
+        fi
+        
+        # Generar salts aleatorios
+        echo -e "${YELLOW}Generando salts aleatorios...${NC}"
+        SALTS=$(curl -s https://api.wordpress.org/secret-key/1.1/salt/)
+        
+        # Crear wp-config.php personalizado
+        cat > "$WP_CONFIG_FILE" << EOL
+<?php
+// Configuración para entorno local
+if (\$_SERVER["HTTP_HOST"] === "localhost:8000") {
+    define("WP_HOME", "http://localhost:8000");
+    define("WP_SITEURL", "http://localhost:8000");
+}
+
+/**
+ * The base configuration for WordPress
+ *
+ * @link https://wordpress.org/support/article/editing-wp-config-php/
+ *
+ * @package WordPress
+ */
+
+// ** Database settings - You can get this info from your web host ** //
+/** The name of the database for WordPress */
+define( 'DB_NAME', getenv('MYSQL_DATABASE') ?: '' );
+
+/** Database username */
+define( 'DB_USER', getenv('MYSQL_USER') ?: '' );
+
+/** Database password */
+define( 'DB_PASSWORD', getenv('MYSQL_PASSWORD') ?: '' );
+
+/** Database hostname */
+define( 'DB_HOST', 'db' );
+
+/** Database charset to use in creating database tables. */
+define( 'DB_CHARSET', 'utf8' );
+
+/** The database collate type. Don't change this if in doubt. */
+define( 'DB_COLLATE', '' );
+
+/**#@+
+ * Authentication unique keys and salts.
+ *
+ * Change these to different unique phrases! You can generate these using
+ * the {@link https://api.wordpress.org/secret-key/1.1/salt/ WordPress.org secret-key service}.
+ *
+ * You can change these at any point in time to invalidate all existing cookies.
+ * This will force all users to have to log in again.
+ *
+ * @since 2.6.0
+ */
+${SALTS}
+
+/**#@-*/
+
+/**
+ * WordPress database table prefix.
+ *
+ * You can have multiple installations in one database if you give each
+ * a unique prefix. Only numbers, letters, and underscores please!
+ */
+\$table_prefix = '${WORDPRESS_TABLE_PREFIX:-wp_}';
+
+/**
+ * For developers: WordPress debugging mode.
+ *
+ * Change this to true to enable the display of notices during development.
+ * It is strongly recommended that plugin and theme developers use WP_DEBUG
+ * in their development environments.
+ *
+ * For information on other constants that can be used for debugging,
+ * visit the documentation.
+ *
+ * @link https://wordpress.org/support/article/debugging-in-wordpress/
+ */
+define( 'WP_DEBUG', false );
+define( 'WP_DEBUG_LOG', true );
+define( 'WP_DEBUG_DISPLAY', false );
+
+/* Add any custom values between this line and the "stop editing" line. */
+define( 'FS_METHOD', 'direct' );
+define( 'AUTOSAVE_INTERVAL', 300 );
+define( 'WP_POST_REVISIONS', 3 );
+define( 'EMPTY_TRASH_DAYS', 7 );
+
+/* That's all, stop editing! Happy publishing. */
+
+/** Absolute path to the WordPress directory. */
+if ( ! defined( 'ABSPATH' ) ) {
+	define( 'ABSPATH', __DIR__ . '/' );
+}
+
+/** Sets up WordPress vars and included files. */
+require_once ABSPATH . 'wp-settings.php';
+EOL
+        
+        echo -e "${GREEN}✓ wp-config.php creado correctamente con la configuración para Docker${NC}"
     fi
     
     echo ""
