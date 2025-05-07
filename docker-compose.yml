@@ -1,5 +1,3 @@
-
-
 services:
   db:
     image: "mysql:${MYSQL_VERSION}"          # Usa la versión definida en .env
@@ -7,72 +5,32 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE:      ${MYSQL_DATABASE}
-      MYSQL_USER:          ${MYSQL_USER}
-      MYSQL_PASSWORD:      ${MYSQL_PASSWORD}
-    command: --default-authentication-plugin=mysql_native_password
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
-      interval: 5s
-      retries: 5
-      timeout: 2s
-      start_period: 10s
     volumes:
       - db_data:/var/lib/mysql
-      - ./database/initdb:/docker-entrypoint-initdb.d
+      - ./database/initdb:/docker-entrypoint-initdb.d # Used for initializing the database with custom scripts
+    ports:
+      - "33060:3306"                        # Expose on localhost:33060
     networks:
       - wp-net
 
   wordpress:
     image: "wordpress:${WORDPRESS_VERSION}"  # Usa la versión definida en .env
+    user: "${LOCAL_UID}:${LOCAL_GID}" 
     container_name: wp_app
     depends_on:
-      db:
-        condition: service_healthy
+      - db
     restart: unless-stopped
     env_file:
       - .env
-    environment:
-      WORDPRESS_DB_HOST:      db:3306
-      WORDPRESS_DB_USER:      ${MYSQL_USER}
-      WORDPRESS_DB_PASSWORD:  ${MYSQL_PASSWORD}
-      WORDPRESS_DB_NAME:      ${MYSQL_DATABASE}
-      WORDPRESS_TABLE_PREFIX: ${WORDPRESS_TABLE_PREFIX}
+    
     volumes:
-      - ./wordpress:/var/www/html           # Hot-reload del código WP
+      - ./wordpress:/var/www/html           # Mounts the local 'wordpress' directory to '/var/www/html' in the container for real-time synchronization of WordPress code changes during development
     ports:
-      - "8000:80"                            # Exponer en localhost:8000
-    networks:
-      - wp-net
-  cli:
-    image: wordpress:cli
-    container_name: wp_cli
-    restart: "no"
-    env_file:
-      - .env
-    environment:
-      WORDPRESS_DB_HOST:      db:3306
-      WORDPRESS_DB_USER:      ${MYSQL_USER}
-      WORDPRESS_DB_PASSWORD:  ${MYSQL_PASSWORD}
-      WORDPRESS_DB_NAME:      ${MYSQL_DATABASE}
-      WORDPRESS_TABLE_PREFIX: ${WORDPRESS_TABLE_PREFIX}
-    volumes:
-      - ./wordpress:/var/www/html
-    networks:
-      - wp-net
-
-  adminer:
-    image: adminer:latest
-    container_name: wp_adminer
-    restart: unless-stopped
-    ports:
-      - "8080:8080"
+      - "8000:80"                            # Expose on localhost:8000
     networks:
       - wp-net
 networks:
   wp-net:
-    driver: bridge                          # Red bridge aislada
+    driver: bridge                          # Isolated bridge network
 volumes:
   db_data:
