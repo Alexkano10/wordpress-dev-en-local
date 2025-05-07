@@ -31,6 +31,14 @@ create_directories() {
     # Crear directorios si no existen
     mkdir -p "$ROOT_DIR/wordpress"
     mkdir -p "$ROOT_DIR/database/initdb"
+
+     # 🔐 Fijar permisos en init.sql
+    INIT_SQL="$ROOT_DIR/database/initdb/init.sql"
+    if [[ -f "$INIT_SQL" ]]; then
+      chmod 644 "$INIT_SQL"
+      chown $USER:$USER "$INIT_SQL"
+      echo -e "${GREEN}✓ Permisos corregidos en database/initdb/init.sql${NC}"
+    fi
     
     echo -e "${GREEN}✓ Estructura de directorios creada correctamente${NC}"
     echo ""
